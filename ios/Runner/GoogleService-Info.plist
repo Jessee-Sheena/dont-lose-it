@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>560135067655-2seimm989dk1a4np3laqhcadru3jsn9a.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.560135067655-2seimm989dk1a4np3laqhcadru3jsn9a</string>
+	<key>API_KEY</key>
+	<string>AIzaSyAm6uyIoRttwRb07sDcWZBOMjwtk_i5GwM</string>
+	<key>GCM_SENDER_ID</key>
+	<string>560135067655</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.jessee.dontLoseIt</string>
+	<key>PROJECT_ID</key>
+	<string>keep-your-stuff</string>
+	<key>STORAGE_BUCKET</key>
+	<string>keep-your-stuff.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:560135067655:ios:472803142ac1bfa52cb2a2</string>
+	<key>DATABASE_URL</key>
+	<string>https://keep-your-stuff.firebaseio.com</string>
+</dict>
+</plist>

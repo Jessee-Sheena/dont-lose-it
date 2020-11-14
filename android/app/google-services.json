@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "560135067655",
+    "firebase_url": "https://keep-your-stuff.firebaseio.com",
+    "project_id": "keep-your-stuff",
+    "storage_bucket": "keep-your-stuff.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:560135067655:android:87bd0e214087291d2cb2a2",
+        "android_client_info": {
+          "package_name": "com.jessee.dont_lose_it"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "560135067655-lvockos03hfvkp84vd400qgkbk1tjn7d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDkpjf8Xit9nR1kB_6EELut-0siB2sPP-U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "560135067655-lvockos03hfvkp84vd400qgkbk1tjn7d.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "560135067655-kshdln1gv7c9n6ed63a8pbfrrk76lfod.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.jessee.keepStuff"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
