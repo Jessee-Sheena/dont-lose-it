@@ -299,28 +299,22 @@ class _HomeScreenState extends State<HomeScreen> {
                                 provider.uploadItem(_itemNameController.text,
                                     _itemLocationController.text, user);
                                 setNotificationCount(notification);
-                                notification.showNotifications(
-                                    channelID: channelId,
-                                    channelName: 'null',
-                                    channelDescription: 'null',
-                                    notificationTitle: 'test',
-                                    notificationBody: 'full test');
-                                print('after the notification has been called');
-//                                notification.scheduledNotification(
-//                                  // schedule notification for item
-//                                  channelID: "channel id",
-//                                  channelName: "channel name",
-//                                  channelDesc: "channel",
-//                                  notificationId: notificationCount,
-//                                  notificationTitle: "Where is your " +
-//                                      _itemNameController.text,
-//                                  notificationBody:
-//                                      "is your ${_itemNameController.text} located: ${_itemLocationController.text}?",
-//                                  notificationTime:
-//                                      tz.TZDateTime.now(tz.local).add(
-//                                    Duration(seconds: 10),
-//                                  ),
-                                //);
+                               
+                                notification.scheduledNotification(
+                                  // schedule notification for item
+                                  channelID: "channel id",
+                                  channelName: "channel name",
+                                  channelDesc: "channel",
+                                  notificationId: notificationCount,
+                                  notificationTitle: "Where is your " +
+                                      _itemNameController.text,
+                                  notificationBody:
+                                      "is your ${_itemNameController.text} located: ${_itemLocationController.text}?",
+                                  notificationTime:
+                                      tz.TZDateTime.now(tz.local).add(
+                                    Duration(seconds: 10),
+                                  ),
+                                );
                                 //close modal when finished
                                 Navigator.of(context, rootNavigator: true)
                                     .pop();
@@ -359,7 +353,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           notificationBody:
                               "is your ${_itemNameController.text} located: ${_itemLocationController.text}?",
                           notificationTime: tz.TZDateTime.now(tz.local).add(
-                            Duration(seconds: 5),
+                            Duration(seconds: 10),
                           ),
                         );
                         print('did it work');
