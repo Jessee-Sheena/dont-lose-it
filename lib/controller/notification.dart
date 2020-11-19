@@ -39,6 +39,9 @@ class LocalNotifications with ChangeNotifier {
     return ReceivedNotification(
         id: id, title: title, body: body, payload: payload);
   }
+//  Future<String> getChannelId() async{
+//    return await notificationsPlugin.create
+//  }
 
   Future<dynamic> showNotifications(
       {@required String channelID,
@@ -47,8 +50,10 @@ class LocalNotifications with ChangeNotifier {
       @required String notificationTitle,
       @required String notificationBody,
       String payload}) async {
-    AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(channelID, channelName, channelDescription);
+    AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+        channelID, channelName, channelDescription,
+        importance: Importance.max);
+    print('android details have been set');
     IOSNotificationDetails iosDetails = IOSNotificationDetails();
     NotificationDetails notificationDetails =
         NotificationDetails(android: androidDetails, iOS: iosDetails);
@@ -73,26 +78,27 @@ class LocalNotifications with ChangeNotifier {
       channelName,
       channelDesc,
       ticker: '$channelName',
+      importance: Importance.max,
     );
-
+    print("set not android");
     IOSNotificationDetails iosDetails = IOSNotificationDetails();
     NotificationDetails notificationDetails =
         NotificationDetails(android: androidDetails, iOS: iosDetails);
 
-//    await notificationsPlugin?.zonedSchedule(
-//      0,
-//      notificationTitle,
-//      notificationBody,
-//      scheduledNotificationDateTime,
-//      notificationDetails,
-//      payload: 'item X',
-//      uiLocalNotificationDateInterpretation:
-//          UILocalNotificationDateInterpretation.absoluteTime,
-//      androidAllowWhileIdle: true,
-//    );
-    await notificationsPlugin.periodicallyShow(0, notificationTitle,
-        notificationBody, RepeatInterval.everyMinute, notificationDetails,
-        payload: "item x", androidAllowWhileIdle: true);
+    await notificationsPlugin?.zonedSchedule(
+      0,
+      notificationTitle,
+      notificationBody,
+      scheduledNotificationDateTime,
+      notificationDetails,
+      payload: 'item X',
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      androidAllowWhileIdle: true,
+    );
+//    await notificationsPlugin.periodicallyShow(0, notificationTitle,
+//        notificationBody, RepeatInterval.everyMinute, notificationDetails,
+//        payload: "item x", androidAllowWhileIdle: true);
   }
 
   Future<dynamic> cancelNotification(int id) async {

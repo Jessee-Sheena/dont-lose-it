@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import '../controller/notification.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -10,6 +8,7 @@ import '../controller/data.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'dart:convert';
+import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -20,7 +19,8 @@ class _HomeScreenState extends State<HomeScreen> {
   TextEditingController _itemNameController = TextEditingController();
   TextEditingController _itemLocationController = TextEditingController();
   int notificationCount;
-
+  String channelId;
+  // we need to get the time zone of the phone for accurate notification times.
   Future<void> _configureLocalTimeZone() async {
     tz.initializeTimeZones();
     final String timeZoneName = await FlutterNativeTimezone.getLocalTimezone();
@@ -32,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     //get the users timeZone to have accurate timed notifications
     _configureLocalTimeZone();
+    channelId = 'one';
   }
 
   //This modal allows user to add an item to the database
@@ -69,6 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // this modal will ask user for the location of the incorrectly located item.
   Future<dynamic> locatedItemModal(context, {Function onPressed}) {
     _itemLocationController.clear();
     return showDialog(
@@ -93,8 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // this modal controls whether you add or delete an  item
-
+  // this modal controls whether you add or delete an  item.
   Future<dynamic> controlModal(context, {Function delete, Function add}) {
     return showDialog(
       context: context,
@@ -118,7 +119,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  //this modal controls what happens when notification is clicked
+  //this modal controls what happens when notification is clicked.
   Future<dynamic> notificationModal(context,
       {Function idealLocation,
       Function otherLocation,
@@ -153,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // give a congratulatory message to the user for knowing where their item is
+  // give a congratulatory message to the user for knowing where their item is.
   Future<dynamic> congratulationModal(context,
       {String item, String location, Function onTap}) {
     return showDialog(
@@ -177,6 +178,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // we need to set the count for the notificationCount variable based on the highest notification number.
   void setNotificationCount(notification) async {
     int temp = await notification.getHighestNotificationId() + 1;
     setState(() {
@@ -219,11 +221,13 @@ class _HomeScreenState extends State<HomeScreen> {
           },
           otherLocation: () {
             Navigator.of(context, rootNavigator: true).pop();
+            FlutterRingtonePlayer.playAlarm(looping: true);
             locatedItemModal(
               context,
               onPressed: () {
                 provider.uploadLocation(
                     itemInfo['item'], _itemLocationController.text, user);
+                FlutterRingtonePlayer.stop();
                 Navigator.of(context, rootNavigator: true).pop();
               },
             );
@@ -287,7 +291,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           controlModal(
                             context,
                             add: () {
-                              print('in the add function');
                               //remove control modal
                               Navigator.of(context, rootNavigator: true).pop();
 
@@ -296,21 +299,28 @@ class _HomeScreenState extends State<HomeScreen> {
                                 provider.uploadItem(_itemNameController.text,
                                     _itemLocationController.text, user);
                                 setNotificationCount(notification);
-                                notification.scheduledNotification(
-                                  // schedule notification for item
-                                  channelID: "channel id",
-                                  channelName: "channel name",
-                                  channelDesc: "channel",
-                                  notificationId: notificationCount,
-                                  notificationTitle: "Where is your " +
-                                      _itemNameController.text,
-                                  notificationBody:
-                                      "is your ${_itemNameController.text} located: ${_itemLocationController.text}?",
-                                  notificationTime:
-                                      tz.TZDateTime.now(tz.local).add(
-                                    Duration(seconds: 10),
-                                  ),
-                                );
+                                notification.showNotifications(
+                                    channelID: channelId,
+                                    channelName: 'null',
+                                    channelDescription: 'null',
+                                    notificationTitle: 'test',
+                                    notificationBody: 'full test');
+                                print('after the notification has been called');
+//                                notification.scheduledNotification(
+//                                  // schedule notification for item
+//                                  channelID: "channel id",
+//                                  channelName: "channel name",
+//                                  channelDesc: "channel",
+//                                  notificationId: notificationCount,
+//                                  notificationTitle: "Where is your " +
+//                                      _itemNameController.text,
+//                                  notificationBody:
+//                                      "is your ${_itemNameController.text} located: ${_itemLocationController.text}?",
+//                                  notificationTime:
+//                                      tz.TZDateTime.now(tz.local).add(
+//                                    Duration(seconds: 10),
+//                                  ),
+                                //);
                                 //close modal when finished
                                 Navigator.of(context, rootNavigator: true)
                                     .pop();
@@ -337,6 +347,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         provider.uploadItem(_itemNameController.text,
                             _itemLocationController.text, user);
                         setNotificationCount(notification);
+
                         notification.scheduledNotification(
                           // schedule notification for item
                           channelID: "channel id",
@@ -348,9 +359,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           notificationBody:
                               "is your ${_itemNameController.text} located: ${_itemLocationController.text}?",
                           notificationTime: tz.TZDateTime.now(tz.local).add(
-                            Duration(seconds: 10),
+                            Duration(seconds: 5),
                           ),
                         );
+                        print('did it work');
                         Navigator.of(context, rootNavigator: true).pop();
                       });
                     },
