@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
 import 'package:timezone/timezone.dart';
 
 class ReceivedNotification {
@@ -39,9 +40,6 @@ class LocalNotifications with ChangeNotifier {
     return ReceivedNotification(
         id: id, title: title, body: body, payload: payload);
   }
-//  Future<String> getChannelId() async{
-//    return await notificationsPlugin.create
-//  }
 
   Future<dynamic> showNotifications(
       {@required String channelID,
@@ -52,7 +50,7 @@ class LocalNotifications with ChangeNotifier {
       String payload}) async {
     AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
         channelID, channelName, channelDescription,
-        importance: Importance.max);
+        importance: Importance.max, priority: Priority.max);
     print('android details have been set');
     IOSNotificationDetails iosDetails = IOSNotificationDetails();
     NotificationDetails notificationDetails =
@@ -79,30 +77,65 @@ class LocalNotifications with ChangeNotifier {
       channelDesc,
       ticker: '$channelName',
       importance: Importance.max,
+      priority: Priority.max,
+      playSound: true,
     );
-    print("set not android");
+
     IOSNotificationDetails iosDetails = IOSNotificationDetails();
     NotificationDetails notificationDetails =
         NotificationDetails(android: androidDetails, iOS: iosDetails);
 
     await notificationsPlugin?.zonedSchedule(
-      0,
+      notificationId,
       notificationTitle,
       notificationBody,
       scheduledNotificationDateTime,
       notificationDetails,
-      payload: 'item X',
+      payload: '{ "item": "$channelID", "location": "$channelDesc"}',
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       androidAllowWhileIdle: true,
     );
-//    await notificationsPlugin.periodicallyShow(0, notificationTitle,
-//        notificationBody, RepeatInterval.everyMinute, notificationDetails,
-//        payload: "item x", androidAllowWhileIdle: true);
+  }
+
+  Future<void> repeatNotification({
+    String channelID,
+    String channelName,
+    String channelDesc,
+    String notificationTitle,
+    int notificationId,
+    String notificationBody,
+  }) async {
+    AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      channelID,
+      channelName,
+      channelDesc,
+      ticker: '$channelName',
+      importance: Importance.max,
+      priority: Priority.max,
+      playSound: true,
+    );
+
+    IOSNotificationDetails iosDetails = IOSNotificationDetails();
+    NotificationDetails notificationDetails =
+        NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    await notificationsPlugin.periodicallyShow(
+        notificationId,
+        notificationTitle,
+        notificationBody,
+        RepeatInterval.everyMinute,
+        notificationDetails,
+        payload: '{ "item": "$channelID", "location": "$channelDesc" }',
+        androidAllowWhileIdle: true);
   }
 
   Future<dynamic> cancelNotification(int id) async {
-    await notificationsPlugin.cancel(id);
+    try {
+      await notificationsPlugin.cancel(id);
+    } catch (e) {
+      print(e);
+    }
   }
 
   Future<int> getNotificationId(String title) async {

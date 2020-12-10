@@ -18,7 +18,6 @@ class _LogInState extends State<LogIn> {
 
   String _email;
 
-  String _name;
   String _emessage;
   String _message;
   Data provider;
@@ -31,7 +30,6 @@ class _LogInState extends State<LogIn> {
     _isLogInForm = true;
     _password = '';
     _email = '';
-    _name = '';
   }
 
   //saves the form information so the data can be sent to the firebase authentication.
@@ -106,18 +104,6 @@ class _LogInState extends State<LogIn> {
       child: Column(
         children: [
           formBoxTopBar(),
-          !_isLogInForm
-              ? appTextField(
-                  hintText: 'Name',
-                  type: TextInputType.text,
-                  obscure: false,
-                  validate: (String value) =>
-                      value.trim().isEmpty ? "Name must not be empty." : null,
-                  save: (String value) {
-                    _name = value;
-                  },
-                )
-              : SizedBox(),
           appTextField(
             hintText: 'Email',
             type: TextInputType.emailAddress,

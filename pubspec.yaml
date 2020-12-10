@@ -37,6 +37,7 @@ dependencies:
   timezone: ^0.5.9
   flutter_native_timezone: ^1.0.4
   flutter_local_notifications_platform_interface: ^2.0.0+1
+  flutter_datetime_picker: ^1.4.0
  
 
 dev_dependencies:

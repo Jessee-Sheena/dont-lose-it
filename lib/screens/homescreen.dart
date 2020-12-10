@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import '../controller/notification.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -8,7 +10,9 @@ import '../controller/data.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'dart:convert';
-import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
+import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
+
+import 'package:keep_stuff/components/itemListTile.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -18,8 +22,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   TextEditingController _itemNameController = TextEditingController();
   TextEditingController _itemLocationController = TextEditingController();
-  int notificationCount;
-  String channelId;
+  Duration _duration = Duration(hours: 24, minutes: 0, seconds: 0);
+
   // we need to get the time zone of the phone for accurate notification times.
   Future<void> _configureLocalTimeZone() async {
     tz.initializeTimeZones();
@@ -30,16 +34,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void initState() {
+    super.initState();
     //get the users timeZone to have accurate timed notifications
     _configureLocalTimeZone();
-    channelId = 'one';
   }
 
-  //This modal allows user to add an item to the database
-
-  Future<dynamic> addItemModal(context, {Function onPressed}) {
-    _itemLocationController.clear();
+  Future<dynamic> addItemModal(
+    context, {
+    Function addItem,
+    Function timePicker,
+  }) {
     _itemNameController.clear();
+    _itemLocationController.clear();
     return showDialog(
       context: context,
       builder: (_) => SimpleDialog(
@@ -61,9 +67,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+          SimpleDialogOption(
+            child: Text("Set Notification Schedule"),
+            onPressed: timePicker,
+          ),
           FlatButton(
             child: Text("Add Item"),
-            onPressed: onPressed,
+            onPressed: addItem,
           ),
         ],
       ),
@@ -71,9 +81,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // this modal will ask user for the location of the incorrectly located item.
-  Future<dynamic> locatedItemModal(context, {Function onPressed}) {
+  Future<dynamic> locatedItemModal(
+    context, {
+    Function onPressedAdd,
+    Function onPressedLost,
+    List locationList,
+  }) {
     _itemLocationController.clear();
     return showDialog(
+      barrierDismissible: false,
       context: context,
       builder: (_) => SimpleDialog(
         title: Text("Where was your Item?"),
@@ -86,9 +102,40 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          FlatButton(
-            child: Text("Add Location"),
-            onPressed: onPressed,
+          locationList.isNotEmpty
+              ? SimpleDialogOption(
+                  child: Text(
+                      "Your item might be in one of the locations listed below."),
+                )
+              : SizedBox(),
+          SimpleDialogOption(
+            child: locationList.isNotEmpty
+                ? Container(
+                    height: 200.0, // Change as per your requirement
+                    width: 200.0, // Change as per your requirement
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: locationList.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        return Text(
+                          locationList[index],
+                        );
+                      },
+                    ),
+                  )
+                : SizedBox(),
+          ),
+          Row(
+            children: [
+              FlatButton(
+                child: Text("Add Location"),
+                onPressed: onPressedAdd,
+              ),
+              FlatButton(
+                child: Text("Lost Item"),
+                onPressed: onPressedLost,
+              ),
+            ],
           ),
         ],
       ),
@@ -123,10 +170,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<dynamic> notificationModal(context,
       {Function idealLocation,
       Function otherLocation,
-      Function lost,
       String item,
       String location}) {
     return showDialog(
+      barrierDismissible: false,
       context: context,
       builder: (_) => SimpleDialog(
         title: Text("Where is your $item"),
@@ -141,12 +188,6 @@ class _HomeScreenState extends State<HomeScreen> {
             child: FlatButton(
               child: Text("Other Location"),
               onPressed: otherLocation,
-            ),
-          ),
-          SimpleDialogOption(
-            child: FlatButton(
-              child: Text("Lost Item"),
-              onPressed: lost,
             ),
           ),
         ],
@@ -179,11 +220,74 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // we need to set the count for the notificationCount variable based on the highest notification number.
-  void setNotificationCount(notification) async {
-    int temp = await notification.getHighestNotificationId() + 1;
-    setState(() {
-      notificationCount = temp;
-    });
+  Future<int> setNotificationCount(notification) async {
+    int temp = await notification.getHighestNotificationId();
+    if (temp > 0) {
+      temp++;
+    } else {
+      temp = 1;
+    }
+    return temp;
+  }
+
+  // delete item
+  void lost(Data provider, LocalNotifications notification, String item,
+      String user) async {
+    provider.deleteItem(item, user);
+    //cancel alarm notification
+    int id = await notification.getHighestNotificationId();
+    notification.cancelNotification(id);
+
+    //cancel item notification
+    int otherId = await notification.getNotificationId("Where is your " + item);
+    notification.cancelNotification(otherId);
+    Navigator.of(context, rootNavigator: true).pop();
+  }
+
+  //this functions is the callback for the addItem modal
+  void addItemFunction(
+    Data provider,
+    user,
+    LocalNotifications notification,
+  ) async {
+    if (_itemLocationController.text != "" &&
+        _itemLocationController.text != "") {
+      provider.uploadItem(
+          _itemNameController.text, _itemLocationController.text, user);
+
+      int notificationCount = await setNotificationCount(notification);
+      notification.scheduledNotification(
+        // schedule notification for item
+        channelID: _itemNameController.text,
+        channelName: _itemNameController.text,
+        channelDesc: _itemLocationController.text,
+        notificationId: notificationCount,
+        notificationTitle: "Where is your " + _itemNameController.text,
+        notificationBody:
+            "is your ${_itemNameController.text} located: ${_itemLocationController.text}?",
+
+        notificationTime: tz.TZDateTime.now(tz.local).add(
+          _duration,
+        ),
+      );
+      //close modal when finished
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+  }
+
+  //this function is the callback for the timePickerFunction
+  void timePickerFunction() {
+    DatePicker.showTimePicker(context,
+        theme: DatePickerTheme(
+          containerHeight: 210.0,
+        ),
+        showTitleActions: true, onConfirm: (time) {
+      setState(() {
+        _duration = Duration(
+            hours: time.hour, minutes: time.minute, seconds: time.second);
+      });
+    }, currentTime: DateTime.now(), locale: LocaleType.en);
+    setState(() {});
   }
 
   @override
@@ -195,51 +299,69 @@ class _HomeScreenState extends State<HomeScreen> {
     // initialize the notification provider
     LocalNotifications notification = Provider.of<LocalNotifications>(context);
 
-    // delete item
-    void lost(Data provider, String item, String user, int id) {
-      provider.deleteItem(item, user);
-      notification.cancelNotification(id);
-      Navigator.of(context, rootNavigator: true).pop();
-    }
-
     // onSelectNotification callback method to route the clicked notification
     Future<dynamic> onSelectNotification(String payload) async {
       // get the payload
       Map<String, dynamic> itemInfo = jsonDecode(payload);
-      int id = await notification
-          .getNotificationId("Where is your " + itemInfo['item']);
-      notificationModal(context,
-          idealLocation: () async {
-            //remove control modal
-            Navigator.of(context, rootNavigator: true).pop();
 
-            await congratulationModal(context,
-                item: itemInfo['item'],
-                location: itemInfo['location'], onTap: () {
+      //reschedule the notification
+      int firstId = await notification
+          .getNotificationId("Where is your " + itemInfo['item']);
+      if (firstId == null) {
+        int id = await setNotificationCount(notification) + 1;
+        notification.repeatNotification(
+          channelID: itemInfo['item'],
+          channelName: itemInfo['item'],
+          notificationTitle: "Where is your " + itemInfo['item'],
+          channelDesc: itemInfo['location'],
+          notificationBody:
+              "is your ${itemInfo['item']} located: ${itemInfo['location']}?",
+          notificationId: id,
+        );
+      }
+      // get the modal when notification is clicked
+      notificationModal(context, idealLocation: () async {
+        //remove control modal
+        Navigator.of(context, rootNavigator: true).pop();
+
+        await congratulationModal(context,
+            item: itemInfo['item'], location: itemInfo['location'], onTap: () {
+          Navigator.of(context, rootNavigator: true).pop();
+        });
+      }, otherLocation: () async {
+        //remove previous modal
+        Navigator.of(context, rootNavigator: true).pop();
+
+        //get the id for the alarm notification and set alarm
+        int id = await setNotificationCount(notification) + 1;
+        notification.repeatNotification(notificationId: id);
+
+        // get list of locations if available
+        List<dynamic> locationList =
+            await provider.getLocationList(user, itemInfo['item']);
+
+        // call the modal to insert the location
+        locatedItemModal(
+          context,
+          locationList: locationList,
+          onPressedAdd: () async {
+            if (_itemLocationController.text != "") {
+              provider.uploadLocation(
+                  itemInfo['item'], _itemLocationController.text, user);
+
+              notification.cancelNotification(id);
               Navigator.of(context, rootNavigator: true).pop();
-            });
+            }
           },
-          otherLocation: () {
-            Navigator.of(context, rootNavigator: true).pop();
-            FlutterRingtonePlayer.playAlarm(looping: true);
-            locatedItemModal(
-              context,
-              onPressed: () {
-                provider.uploadLocation(
-                    itemInfo['item'], _itemLocationController.text, user);
-                FlutterRingtonePlayer.stop();
-                Navigator.of(context, rootNavigator: true).pop();
-              },
-            );
-          },
-          lost: () => lost(provider, itemInfo['item'], user, id),
-          item: itemInfo['item'],
-          location: itemInfo['location']);
+          onPressedLost: () =>
+              lost(provider, notification, itemInfo['item'], user),
+        );
+      }, item: itemInfo['item'], location: itemInfo['location']);
     }
 
-    // set the onSelectNotification method
-    notification.initializeNotifications((payload) => onSelectNotification(
-        '{ "item": "${_itemNameController.text}", "location": "${_itemLocationController.text}"}'));
+    // set the onSelectNotification method in the provider
+    notification
+        .initializeNotifications((payload) => onSelectNotification(payload));
 
     //return the view
 
@@ -286,7 +408,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             "Ideal Location: ${ds.data()['itemLocation']}"),
                         itemName: Text(ds.data()['itemName']),
                         onTap: () {
-                          print('tapped');
                           //go to modal to add item
                           controlModal(
                             context,
@@ -295,35 +416,17 @@ class _HomeScreenState extends State<HomeScreen> {
                               Navigator.of(context, rootNavigator: true).pop();
 
                               // run add item method
-                              addItemModal(context, onPressed: () {
-                                provider.uploadItem(_itemNameController.text,
-                                    _itemLocationController.text, user);
-                                setNotificationCount(notification);
-                               
-                                notification.scheduledNotification(
-                                  // schedule notification for item
-                                  channelID: "channel id",
-                                  channelName: "channel name",
-                                  channelDesc: "channel",
-                                  notificationId: notificationCount,
-                                  notificationTitle: "Where is your " +
-                                      _itemNameController.text,
-                                  notificationBody:
-                                      "is your ${_itemNameController.text} located: ${_itemLocationController.text}?",
-                                  notificationTime:
-                                      tz.TZDateTime.now(tz.local).add(
-                                    Duration(seconds: 10),
-                                  ),
-                                );
-                                //close modal when finished
-                                Navigator.of(context, rootNavigator: true)
-                                    .pop();
+                              addItemModal(context, timePicker: () {
+                                timePickerFunction();
+                              }, addItem: () async {
+                                addItemFunction(provider, user, notification);
                               });
                             },
                             delete: () async {
                               provider.deleteItem(ds.data()['itemName'], user);
                               int id = await notification.getNotificationId(
                                   "Where is your " + ds.data()['itemName']);
+
                               notification.cancelNotification(id);
                               Navigator.of(context, rootNavigator: true).pop();
                             },
@@ -337,67 +440,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     itemLocation: Text(" Add Item location"),
                     itemName: Text("Add Item Name"),
                     onTap: () {
-                      addItemModal(context, onPressed: () {
-                        provider.uploadItem(_itemNameController.text,
-                            _itemLocationController.text, user);
-                        setNotificationCount(notification);
-
-                        notification.scheduledNotification(
-                          // schedule notification for item
-                          channelID: "channel id",
-                          channelName: "channel name",
-                          channelDesc: "channel",
-                          notificationId: notificationCount,
-                          notificationTitle:
-                              "Where is your " + _itemNameController.text,
-                          notificationBody:
-                              "is your ${_itemNameController.text} located: ${_itemLocationController.text}?",
-                          notificationTime: tz.TZDateTime.now(tz.local).add(
-                            Duration(seconds: 10),
-                          ),
-                        );
-                        print('did it work');
-                        Navigator.of(context, rootNavigator: true).pop();
+                      addItemModal(context, timePicker: () {
+                        timePickerFunction();
+                      }, addItem: () {
+                        addItemFunction(provider, user, notification);
                       });
                     },
                   );
           }
         },
-      ),
-    );
-  }
-}
-
-// this item is the tile that is dynamically built in the list view builder.
-class ItemListTile extends StatelessWidget {
-  final Widget image;
-  final Widget itemName;
-  final Widget itemLocation;
-  final Function onTap;
-  const ItemListTile(
-      {this.image, this.itemName, this.itemLocation, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(left: 25, top: 25, right: 25),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(5),
-        color: kBlueColor,
-      ),
-      child: GestureDetector(
-        child: Padding(
-          padding: const EdgeInsets.all(18.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              image == null ? SizedBox() : image,
-              itemName,
-              itemLocation,
-            ],
-          ),
-        ),
-        onTap: onTap,
       ),
     );
   }

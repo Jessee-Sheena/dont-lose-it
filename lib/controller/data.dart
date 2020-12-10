@@ -1,5 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -8,14 +8,17 @@ import '../model/authentication.dart';
 class Data extends ChangeNotifier {
   FirebaseFirestore firestore = FirebaseFirestore.instance;
   Auth _auth;
+
   Data() {
     _auth = Auth();
   }
+
   String _message;
 
   Stream<User> get authStateChanged => auth.getAuthInstance.authStateChanges();
 
   get auth => _auth;
+
   Future<String> signIn(String email, String password) async {
     try {
       await _auth.signIn(email, password);
@@ -74,6 +77,26 @@ class Data extends ChangeNotifier {
     } catch (e) {
       print(e);
     }
+  }
+
+  Future<List<dynamic>> getLocationList(String user, String itemName) async {
+    List<dynamic> locationList = [];
+    try {
+      DocumentSnapshot results = await firestore
+          .collection(user)
+          .doc(itemName)
+          .collection('pastLocations')
+          .doc('listOfLocations')
+          .get();
+      if (results.data() != null) {
+        results.data().forEach((key, value) {
+          locationList.add(value);
+        });
+      }
+    } catch (e) {
+      print(e);
+    }
+    return locationList;
   }
 
   void deleteItem(String itemName, String user) async {
